@@ -1,0 +1,465 @@
+---
+title: "Exercise set 3"
+author: Hien Le
+date: 11/11/2021
+output: Exercise set 3
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/student_data/BBT.BI.202_2021/students/leh/exercise_3")
+```
+
+## Exercise 1
+
+```{r E1-Q1.1}
+## Add your code here 
+count_matrix <- readRDS("count_matrix_normalized_logged.RDS") #loading data
+head(count_matrix,4)
+?rowttests
+ttest_results = rowttests(count_matrix)
+```
+
+
+
+```{r hint-1}
+## This hint shows an example of how to prepare the factor variable for fac argument in rowttests function. For more information read the manual for ?sub and ?factor 
+cols = c('cat_1', 'cat_2', 'dog_1', 'cat_3', 'dog_2')
+animals =  sub("_[0-9]*", "", cols)
+animals
+animals_fac = factor(animals)
+animals_fac
+```
+
+
+
+```{r E1-Q1.6}
+## Add your code here 
+library(genefilter)
+str(count_matrix)
+head(count_matrix,1)
+cols <- as.vector(colnames(count_matrix))
+count_matrix_cols = sub("_[0-9]*", "", cols)
+count_matrix_cols
+count_matrix.fac = factor(count_matrix_cols)
+count_matrix.fac
+ttest_results <- rowttests(count_matrix, count_matrix.fac)
+ttest_results
+```
+
+
+
+```{r E1-Q1.7}
+## Add your code here 
+statcrit <- which(ttest_results$p.value < 0.05)
+length(statcrit)
+```
+
+
+
+```{r E1-Q1.8}
+## Add your code here 
+minIdx = which.min(ttest_results$p.value)
+minIdx
+row.names(ttest_results)[minIdx]
+```
+
+
+
+```{r E1-Q1.9}
+## Add your code here 
+hist(ttest_results[,3], xlab = "p-value", main = "Histograme of p-values")
+```
+
+
+
+```{r E1-Q1.12}
+## Add your code here 
+ttest_results$p.value.adj <- p.adjust(ttest_results$p.value, method = "BH")
+head(ttest_results, 4)
+```
+
+
+
+```{r E1-Q1.13}
+## Add your code here 
+statcrit_adjust <- which(ttest_results$p.value.adj < 0.05)
+length(statcrit_adjust)
+```
+
+
+
+```{r E1-Q1.14}
+## Add your code here 
+plot(ttest_results$p.value, ttest_results$p.value.adj, xlab = "p-value", ylab = "p-value adjust", main = "Correlation")
+abline(h=0.05, v=0.05, col="red")
+```
+
+
+
+```{r E1-Q2}
+## Add your code here 
+minIdx_adj = which.min(ttest_results$p.value.adj)
+minIdx_adj
+row.names(ttest_results)[minIdx_adj]
+```
+
+
+
+## Exercise 2.
+
+```{r E2-Q1-MY_WILCOX}
+
+my_wilcox = function(v, group1, group2) {
+  
+  test_result = wilcox.test(x=v[group1], y=v[group2], exact=FALSE)
+  
+  p.value = test_result$p.value
+  names(p.value) = "p.value"
+  
+  return(c(test_result$statistic, p.value))
+}
+```
+
+
+```{r E2-Q1.4}
+## Add your code here
+#complete the following line by replacing XX, YY, and ZZ
+wilcox_results <- apply(count_matrix, 1, my_wilcox, group1=1:5, group2=6:20)
+wilcox_results_df = as.data.frame(t(wilcox_results)) # note the t()
+
+# p-value less than 0.05
+wilcox_pvalue <- which(wilcox_results_df$p.value < 0.05)
+length(wilcox_pvalue)
+minIdx_wilcox = which.min(wilcox_results_df$p.value)
+minIdx_wilcox
+row.names(wilcox_results_df)[minIdx_wilcox]
+
+```
+
+
+
+```{r E2-Q1.10}
+## Add your code here
+head(wilcox_results_df,4)
+hist(wilcox_results_df$p.value, xlab = "p-value", main = "Histograme of p-values in Wilcoxon test")
+```
+
+
+
+```{r E2-Q1.11}
+## Add your code here
+wilcox_results_df$p.value.adj.BH <- p.adjust(wilcox_results_df$p.value, method = "BH")
+head(wilcox_results_df, 4)
+
+#adjested p-value below 0.05
+wilcox_pvalue_adjust <- which(wilcox_results_df$p.value.adj.BH < 0.05)
+length(wilcox_pvalue_adjust)
+
+#the smallest p-value
+min(wilcox_results_df$p.value.adj.BH)
+round(min(wilcox_results_df$p.value.adj.BH),3)
+```
+
+
+
+```{r E2-Q1.14}
+## Add your code here
+hist(wilcox_results_df$p.value.adj.BH, xlab = "Adjusted p-values", main = "Histograme of adjusted p-values in Wilcoxon test")
+``` 
+
+
+
+```{r E2-Q1.15}
+## Add your code here
+plot(wilcox_results_df$p.value, wilcox_results_df$p.value.adj.BH, xlab = "p-values", ylab = "Adjusted p-value", main = "Correlation")
+abline(h=0.05, v=0.05, col="red")
+``` 
+
+
+
+```{r E2-Q1.16}
+## Add your code here
+ttest <- row.names(ttest_results)[ttest_results$p.value.adj < 0.05]
+wilcox <- row.names(wilcox_results_df)[wilcox_results_df$p.value.adj.BH < 0.05]
+venn_data <- list(ttest, wilcox)
+library(gplots)
+venn(venn_data)
+``` 
+
+
+
+## Exercise 3.
+
+```{r hint-2}
+# Indexing with row names
+
+# creating two data frames
+df_area = data.frame(area=c(100, 12, 24, 65))
+rownames(df_area) = c("item1", "item2", "item3", "item4")
+head(df_area)
+
+df_qualities = data.frame(shape=c("square", "circle", "triangle", "circle"), color=c("red", "red", "blue", "black"))
+rownames(df_qualities) = c("item1", "item2", "item3", "item4")
+df_qualities
+
+# finding items that have area greater than 50
+area_gt50 = row.names(df_area)[df_area > 50]
+area_gt50
+
+# extracting the qualities information for items whose area was greater than 50
+df_qualities[row.names(df_qualities) %in% area_gt50, ] # note: order matters
+```
+
+
+
+```{r E3-Q1.1}
+## Add your code here
+# Indexing with row names
+#Find row names from ttest_results which have adjusted t-test p-value are below 0.05
+row_names_ttest_result_filter <- row.names(ttest_results)[ttest_results$p.value.adj < 0.05]
+row_names_ttest_result_filter
+#Filter in count_matrix, find rows which have names listed in row_names_ttest_result_filter 
+count_matrix_de_ttest <- count_matrix[row.names(count_matrix) %in% row_names_ttest_result_filter, ]
+count_matrix_de_ttest
+dim(count_matrix_de_ttest)
+
+#plot a heat map of count_matrix_de_test
+heatmap(count_matrix_de_ttest, labRow = NULL)
+
+```
+
+
+
+```{r E3-Q1.6}
+## Add your code here
+correlation_dist = function(x, method="pearson"){
+  
+  corr_distance = as.dist((1 - cor(t(x), method=method))/2) ## note the t()
+  
+  return(corr_distance)
+}
+heatmap(count_matrix_de_ttest, correlation_dist(count_matrix_de_ttest))
+
+
+```  
+
+
+
+```{r E3-Q1.8}
+## Add your code here
+# Indexing with row names
+#Find row names from ttest_results which have adjusted t-test p-value are below 0.05
+
+row_names_wilcox_results_df <- row.names(wilcox_results_df)[wilcox_results_df$p.value.adj.BH < 0.05]
+
+row_names_wilcox_results_df
+#Filter in count_matrix, find rows which have names listed in row_names_ttest_result_filter 
+count_matrix_de_wilcox <- count_matrix[row.names(count_matrix) %in% row_names_wilcox_results_df, ]
+count_matrix_de_wilcox
+dim(count_matrix_de_wilcox)
+
+#plot a heat map of count_matrix_de_test
+heatmap(count_matrix_de_wilcox, labRow = NULL)
+``` 
+
+
+
+```{r E3-Q1.9}
+## Add your code here
+correlation_dist = function(x, method="pearson"){
+  
+  corr_distance = as.dist((1 - cor(t(x), method=method))/2) ## note the t()
+  
+  return(corr_distance)
+}
+heatmap(count_matrix_de_wilcox, correlation_dist(count_matrix_de_wilcox))
+
+
+``` 
+
+
+
+```{r E3-Q1.10}
+## Add your code here
+head(ttest_results,4)
+totcrit <- which((ttest_results$p.value.adj < 0.05) & (abs(ttest_results$dm) > 1))
+length(totcrit)
+
+statcrit <- which(ttest_results$p.value.adj < 0.05)
+length(statcrit)
+
+effcrit<- which(abs(ttest_results[,2]) > 1)
+length(effcrit)
+``` 
+
+
+
+```{r E3-1.12}
+## Add your code here
+par(pty="s")
+plot(ttest_results[,2],-log10(ttest_results[,4]), xlab = "Difference of means", ylab="-Log10(pvalues)", xlim = c(-3,3), ylim = c(0, 5))
+points(ttest_results[statcrit, 2], -log10(ttest_results[statcrit, 4]), col="green")
+points(ttest_results[effcrit, 2], -log10(ttest_results[effcrit, 4]), col="blue")
+points(ttest_results[totcrit, 2], -log10(ttest_results[totcrit, 4]), col="red")
+
+``` 
+
+
+```{r E3-Q1.13}
+## Add your code here
+
+``` 
+
+
+## Exercise 4.
+
+```{r hint-3}
+## caculating how long a for-loop takes to run
+ptm <- proc.time()
+
+NUMPERMS=500
+
+means = c()
+
+for (i in 1:NUMPERMS) {
+  means[i] = mean(stats::runif(500))
+}
+
+proc.time() - ptm # we are interested in the elapsed time
+```
+
+
+
+```{r hint-4}
+## observing how -index shorthand works
+samples = paste("sample", 1:10, sep="_") # This creates 10 samples in the form sample_i
+samples
+index = c(1, 5, 6)
+samples[index]
+samples[-index]
+```
+
+
+
+```{r E4-Q1.3}
+set.seed(777) ## do not remove or modify this otherwise your answer will/may not be accepted.
+perm_stats <- c() #1.Initialize variable perm_stats where you are going to store the t-statistics.
+gen_no = 1
+## Add your code here
+NUMPERMS=500 #2.Write a for-loop that iterates NUMPERMS=500 times
+  for(i in 1:NUMPERMS){
+    perm_sample <- sample(1:20, size = 5, replace = FALSE)#3. Use perm_sample to subset our count_matrix to vectors of BPH and PC values for a given gene (here use the gene at position 1)
+    bph_sample = count_matrix[gen_no,perm_sample]#assign the results to variables bph_sample and pc_sample
+    pc_sample = count_matrix[gen_no,-perm_sample]
+    perm_stats[i] <- t.test(bph_sample, pc_sample)$statistic#4. Use these subsets as input to t.test() function and calculate a t-statistic
+    
+  }
+  mean(perm_stats)
+  test_statistic_gen_1 = ttest_results[gen_no, ]$statistic #Extract the t-statistic for the gene at position 1 from ttest_results
+  p_value = mean(test_statistic_gen_1 < abs(perm_stats))
+  p_value
+
+``` 
+
+
+
+```{r E4-Q1.4}
+
+calculate_pvalue_by_permutation = function(x, n=50, k=10, test_statistic=0, NUMPERMS=1e3, seed = NULL) {
+  
+  set.seed(seed) # keep this line
+  
+  ## Complete the code here by modifying your code in E4-Q1.3
+  perm_stats <- c() #1.Initialize variable perm_stats where you are going to store the t-statistics.
+  for(i in 1:NUMPERMS){
+    perm_sample <- sample(1:20, size = 5, replace = FALSE)#3. Use perm_sample to subset our count_matrix to vectors of BPH and PC values for a given gene (here use the gene at position 1)
+    bph_sample = x[perm_sample]#assign the results to variables bph_sample and pc_sample
+    pc_sample = x[-perm_sample]
+    perm_stats[i] <- t.test(bph_sample, pc_sample)$statistic#4. Use these subsets as input to t.test() function and calculate a t-statistic
+  }
+  p_value = mean(test_statistic < abs(perm_stats))
+  return(p_value)
+}
+
+``` 
+
+
+
+```{r E4-Q1.5}
+calculate_pvalue_by_permutation(x = count_matrix[1, ],
+                                n = 20,
+                                k = 5,
+                                test_statistic = ttest_results[1, ]$statistic,
+                                NUMPERMS=500,
+                                seed = 777) # do not modify the seed
+```
+
+
+
+```{r E4-Q1.6}
+## Add your code here
+permutation_p_values <- c()
+NUMPERMS=1e3
+seed = 777
+NUM_GENS = nrow(count_matrix)
+for (i in 1:NUM_GENS){
+  permutation_p_values[i] <- calculate_pvalue_by_permutation(count_matrix[i, ], 20,5, ttest_results[i, ]$statistic, NUMPERMS, seed)
+}
+``` 
+
+
+
+```{r E4-Q1.7}
+## Add your code here
+ hist(permutation_p_values)
+``` 
+
+
+
+```{r E4-Q1.9}
+## Add your code here
+``` 
+
+
+
+## Exercise 5.
+
+```{r E5-Q1.1}
+## Add your code here
+hist(ttest_results$p.value, xlab = "p-values", main = "Frequency of p-values")
+abline(h=0.55, v=0.5, col=c("green", "red"))
+``` 
+
+
+
+```{r E5-Q1.2}
+## Add your code here
+lambda = 0.5
+m = 2e4
+pi_0 = length(which(ttest_results[,3] > lambda)) / m / (1-lambda)
+pi_0
+round(pi_0,2)
+0.35
+``` 
+
+
+
+```{r E5-Q1.4}
+## Add your code here
+alpha = 0.05
+positives = which(ttest_results[,3] < alpha)
+m = 2e4
+false_positive = pi_0 * m * alpha
+round(false_positive,1)
+``` 
+
+
+
+```{r E5-Q1.5}
+## Add your code here
+falsepos = pi_0 * m * alpha
+fdr = falsepos / length(positives)
+round(fdr,2)
+``` 
