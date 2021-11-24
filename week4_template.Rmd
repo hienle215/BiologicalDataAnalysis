@@ -1,0 +1,438 @@
+---
+title: "Exercise set 4"
+author: "Hien Le"
+date: "18/11/2021"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/student_data/BBT.BI.202_2021/students/leh/exercise_4")
+```
+
+## Exercise 1
+
+```{r E1-Q1.1}
+## Add your code here 
+library(help="GO.db")
+library(GO.db)
+?GO.db
+?AnnotationDb
+```
+
+
+
+
+```{r E1-Q2.1}
+## Add your code here
+all_columns = keytypes(GO.db)
+found_keys = keys(GO.db,column="TERM",pattern="fatty acid oxidation")
+found_keys
+
+```
+
+
+
+```{r E1-Q2.2}
+## Add your code here 
+all_columns
+data_columns <- all_columns[2:4]
+GO_results <- select(GO.db, keys=found_keys,keytype = "GOID" , columns = data_columns)
+table(GO_results)
+```
+
+
+
+```{r E1-Q2.5}
+## Add your code here 
+selected_key <- GO_results[1,]
+selected_key
+selected_key_children <- as.list(GOBPCHILDREN[selected_key$GOID])
+selected_key_children_vector <- unlist(selected_key_children)
+select(GO.db,keys=selected_key_children_vector, columns = "TERM")
+
+select(GO.db, keys = selected_key_children[[1]], columns = "TERM")### 
+```
+
+
+
+```{r E1-Q2.7}
+## Add your code here 
+selected_key_offspring <- as.list(GOBPOFFSPRING[selected_key$GOID])
+selected_key_offspring_vector <- unlist(selected_key_offspring)
+select(GO.db,keys=selected_key_offspring_vector, columns = "TERM")
+
+select(GO.db, keys = selected_key_offspring[[1]], columns = "TERM")#
+```
+
+
+
+## Exercise 2.
+
+```{r E2-Q1.1}
+## Add your code here
+count_matrix <- readRDS("count_matrix_normalized_logged.RDS") #loading data
+ensembl_gene_ids <- rownames(count_matrix)
+ensembl_gene_ids
+
+```
+
+
+
+```{r E2-Q1.2}
+## Add your code here
+to_convert = ensembl_gene_ids
+library('biomaRt')
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+mappings <- getBM(
+                  filters= "ensembl_gene_id", 
+                  attributes = c("ensembl_gene_id", "go_id"),
+                  values=to_convert, 
+                  mart= mart) 
+dim(mappings)
+
+
+
+
+```
+
+
+```{r E2-Q1.4}
+## Add your code here
+a = unique(mappings$ensembl_gene_id)
+length(a)
+
+intersect <- function(x, y) y[match(x, y, nomatch = 0)]
+b = intersect(ensembl_gene_ids, mappings$ensembl_gene_id)
+length(b)
+
+```
+
+
+
+```{r E2-Q1.5}
+## Add your code here
+mappings
+GO_count_table = sort(table(mappings$go_id), decreasing = TRUE)
+GO_count_table
+
+```
+
+```{r E2-Q1.6}
+## Add your code here
+mappings_empty = mappings[mappings$go_id == "",]
+head(mappings_empty)
+nrow(mappings_empty)
+
+```
+
+
+```{r E2-Q1.7}
+## Add your code here
+mappings_cleaned = mappings[mappings$go_id != "",]
+mappings_cleaned
+
+unique_genes = unique(mappings_cleaned$ensembl_gene_id)
+length(unique_genes)
+
+```
+
+
+```{r E2-Q1.9}
+## Add your code here
+
+
+mappings_cleaned_bp
+mappings_cleaned_bp = na.omit(mappings_cleaned_bp) #Remove NA
+mappings_cleaned_bp_Ensembl = mappings_cleaned_bp$ensembl_gene_id #Filter colummn of ensembl_gene_id
+unique_bp_Ensembl = unique(mappings_cleaned_bp_Ensembl) #Get Unique ensembl_gene_id
+length(unique_bp_Ensembl) 
+
+mappings_cleaned_bp_new = mappings_cleaned_bp
+```   
+
+
+## Exercise 3.
+
+
+```{r E3-Q1.1}
+## Add your code here
+N = nrow(mappings_cleaned_bp)
+N
+
+
+mappings_cleaned_bp_Ensembl = mappings_cleaned_bp$ensembl_gene_id #Filter colummn of ensembl_gene_id
+unique_bp_Ensembl = unique(mappings_cleaned_bp_Ensembl) #Get Unique ensembl_gene_id
+length(unique_bp_Ensembl) 
+
+mappings_cleaned_bp_new = mappings_cleaned_bp
+
+```
+
+
+
+```{r E3-Q1.3}
+## Add your code here
+gene_list = readRDS("DE_genes_PC_vs_BPH.RDS")
+
+```  
+
+
+```{r E3-Q1.4}
+## Add your code here
+
+mappings_cleaned_bp_de <- mappings_cleaned_bp[mappings_cleaned_bp$ensembl_gene_id %in% rownames(gene_list),]
+M <- nrow(mappings_cleaned_bp_de)
+M
+
+```
+
+
+
+```{r E3-Q1.6}
+## Add your code here
+
+GoID_1 <- GO_results$GOID[1] #1
+GoID_1
+GoID_1_key_offspring <- as.list(GOBPOFFSPRING[GoID_1])[[1]]#22
+all_go_terms <- c(GoID_1, GoID_1_key_offspring)
+```
+
+
+
+```{r E3-Q1.7}
+## Add your code here
+all_go_terms
+length(all_go_terms)#23
+```
+
+
+
+```{r E3-Q1.8}
+## Add your code here
+#Example - cong anh
+#A = data.frame(C = c(1,2,3,4))
+#B = data.frame(C = c(1,3,4))
+#A$C %in% B$C
+mappings_cleaned_bp_filter = mappings_cleaned_bp[mappings_cleaned_bp$go_id %in% all_go_terms,]
+n = nrow(mappings_cleaned_bp_filter) #133
+
+```
+
+
+
+```{r E3-Q1.10}
+## Add your code here
+mappings_cleaned_bp_de_filter = mappings_cleaned_bp_de[mappings_cleaned_bp_de$go_id %in% all_go_terms,]
+k = nrow(mappings_cleaned_bp_de_filter) #11
+
+``` 
+
+
+
+```{r E3-Q1.12}
+## Add your code here
+colnames_table = c("Other GO terms", "Go Term of interst")
+rownames_table = c("Not sigificant", "Significant")
+
+row1 <- c(N-(M-k+n), n-k)
+
+row2 <- c(M-k, k)
+contingency_table <- rbind(row1, row2)
+colnames(contingency_table) = colnames_table
+rownames(contingency_table) = rownames_table
+contingency_table
+
+``` 
+
+
+```{r E3-Q1.13}
+## Add your code here
+fisher.test(contingency_table, alternative = "greater") #p-value = 0.87
+
+fisher.test(contingency_table, alternative = "greater")$p.value #p-value = 0.87
+
+
+``` 
+
+
+
+```{r E3-Q1-HYPERGEOMETRIC-EXAMPLE}
+density = dhyper(0:n, M, N-M, n)
+plot(0:n, density, xlab="n")
+points(k, density[k+1], col="red") # note k+1 because we start from 0 in the line above
+``` 
+
+
+
+```{r E3-Q1-HYPERGEOMETRIC-EXAMPLE-PVALUE}
+## two other ways to calculate p-value without using Fisher's exact test
+sum(dhyper(k:n, M, N-M, n)) # one-tailed
+1- phyper(k-1, M, N-M, n) # one-tailed
+``` 
+
+
+
+```{r E3-Q1.15}
+## Add your code here
+rownames(gene_list) 
+on_gene_list = mappings_cleaned_bp$ensembl_gene_id %in% rownames(gene_list)
+
+related_to_go = mappings_cleaned_bp$go_id %in% all_go_terms 
+
+contingency_table_alter = table(on_gene_list, related_to_go)
+contingency_table_alter
+``` 
+
+
+
+## Exercise 4.
+
+
+```{r E4-Q1.1}
+set.seed(3568) ## Do not change this. Otherwise there is a chance that your answer will not be accepted
+## Add your code here
+
+ ##
+ set.seed(3568)
+ ks_for_samples = vector("integer", length = 2000)
+ NUMPERMS = 2000
+ M
+ nrow(mappings_cleaned_bp)
+ head(mappings_cleaned_bp,4)
+ for(i in 1: NUMPERMS){
+   mappings_cleaned_bp_samples_1 = mappings_cleaned_bp[sample.int(nrow(mappings_cleaned_bp), size = M, replace = FALSE),]
+   temp_1 = mappings_cleaned_bp_samples_1[mappings_cleaned_bp_samples_1$go_id %in% all_go_terms,]
+   ks_for_samples[i] = nrow(temp_1)
+ }
+ 
+ 
+   
+   ####
+ks_for_samples_table = table(ks_for_samples) 
+ks_for_samples_table_normed = ks_for_samples_table
+thres = k
+par(las=2)
+barplot(ks_for_samples_table_normed, col = as.integer(rownames(ks_for_samples_table_normed)) >= thresh)
+``` 
+
+
+
+```{r hint-1}
+set.seed(845)
+thresh = 5
+some_random_values = sample.int(n=20, size=200, replace = TRUE)
+some_random_values_table = table(some_random_values)
+par(las=2)
+barplot(some_random_values_table, col = as.integer(rownames(some_random_values_table)) >= thresh)
+```
+
+
+
+```{r E4-Q1.2}
+## Add your code here
+ks_for_samples_table = table(ks_for_samples)
+ks_for_samples_table_normed = ks_for_samples_table/NUMPERMS
+
+set.seed(845)
+thresh = k/NUMPERMS
+par(las=2)
+barplot(ks_for_samples_table_normed, col = as.integer(rownames(ks_for_samples_table_normed)) >= thresh)
+
+``` 
+
+
+
+```{r E4-Q1.3}
+## Add your code here
+set.seed(845)
+par(las=2)
+barplot(ks_for_samples_table_normed, col = as.integer(rownames(ks_for_samples_table_normed)) >= k, ylab="density", xlab="x", las=2)
+```
+
+
+
+```{r E4-Q1.4}
+## Add your code here
+p_value_permutation_normed = sum(rownames(ks_for_samples_table_normed) >=k)/2000
+p_value_permutation_normed
+
+```
+
+
+
+## Exercise 5.
+
+```{r hint-2}
+object_names = c("book", "book", "book", "pen",  "pen", "paper")
+object_positions = c()
+
+for (i in seq_along(object_names)){
+  
+  object_positions[i] = sprintf("%s: %s", i, object_names[i])
+
+}
+
+names(object_positions) = object_names
+
+object_positions
+```
+
+
+```{r exercise-5-task-2}
+## Add your code here
+#1.1
+to_convert = ensembl_gene_ids
+library('biomaRt')
+#1.2
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+mappings_chr <- getBM(
+                  filters= "ensembl_gene_id", 
+                  attributes = c("ensembl_gene_id", "chromosome_name"),
+                  values=to_convert, 
+                  mart= mart) 
+dim(mappings_chr)
+
+``` 
+
+
+
+```{r exercise-5-task-3}
+## Add your code here
+#1.3
+
+rownames(gene_list)
+on_gene_list_chr = mappings_chr$ensembl_gene_id %in% rownames(gene_list)
+chromosome_names = unique(mappings_chr$chromosome_name)
+chromosome_names
+chromosome_enrichment_pvalues <- c()
+related_to_chr <-c()
+contingency_table_chr
+
+for(i in seq_along(chromosome_names)){
+   chr_positions[i] = sprintf("%s: %s", i, chromosome_names[i])
+   related_to_chr = mappings_chr$chromosome_name %in% chromosome_names[i]
+   contingency_table_chr = table(on_gene_list_chr, related_to_chr)
+   chromosome_enrichment_pvalues[i] = fisher.test(contingency_table_chr, alternative = "greater")$p.value
+}
+chromosome_enrichment_pvalues
+names(chromosome_enrichment_pvalues)= chromosome_names
+chromosome_enrichment_pvalues
+
+
+``` 
+
+
+
+```{r exercise-5-task-4}
+## Add your code here
+names(chromosome_enrichment_pvalues)= chromosome_names
+enrichment_score = - log10(chromosome_enrichment_pvalues)
+enrichment_score = sort(enrichment_score, decreasing = TRUE)
+par(las=2)
+barplot(enrichment_score, ylim=c(0,2.5), xlab = "Chromosom name", ylab = "Enrichment score")
+abline(h=0.5, col = "red")
+``` 
+
+
