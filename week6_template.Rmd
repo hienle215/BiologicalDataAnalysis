@@ -1,0 +1,366 @@
+---
+title: "Exercise set 6"
+author: "Hien Le"
+date: "02/12/2021"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("student_data/BBT.BI.202/students/leh/exercise_6")
+```
+
+## Exercise 1. Survival analysis: Kaplan-Meier curves
+
+```{r E1-Q1.1}
+## Add your code here
+clinical_data = read.table(file = 'prad_MSKCC_2010_subset.tsv', sep = '\t', header = TRUE)
+
+```
+
+
+
+```{r E1-Q1.2}
+## Add your code here
+library(survival)
+library(survminer)
+#1.3
+?survival::survfit.formula
+#1.6 Examples section of the ?survival::survfit.formula NOT ?survival::survfit() 
+
+```
+
+
+
+```{r hint-1}
+df = data.frame(id = c(1, 2, 3, 4),
+                status = c("D", "A", "A", "A")
+                )
+df$new_col = ifelse(df$status == "A", 0, 1)
+df
+```
+
+
+
+```{r E1-Q1.7}
+## Add your code here
+clinical_data$censored =  ifelse(clinical_data$DFS == "0:DiseaseFree", 0, 1)
+```
+
+
+
+```{r E1-Q1.8}
+## Add your code here
+#For the time argument, we will use the clinical_data$DFM 
+#For the event argument,clinical_data$censored
+surv_obj = Surv(clinical_data$DFM, clinical_data$censored)
+```
+
+
+
+```{r E1-Q1.9}
+## Add your code here
+surv_obj_fit_all = survival::survfit(Surv(clinical_data$DFM, clinical_data$censored) ~ 1)
+print(surv_obj_fit_all) 
+summary(surv_obj_fit_all)$table
+```
+
+
+
+```{r E1-Q1.10}
+## Add your code here
+ ?survminer::ggsurvplot
+```
+
+
+
+
+```{r E1-Q1.15}
+## Add your code here
+survminer::ggsurvplot(fit = surv_obj_fit_all,
+                      data = clinical_data,
+                      surv.median.line = "v",
+                     risk.table = "abs_pct")
+```
+
+
+
+
+```{r E1-Q1.17}
+## Add your code here
+surv_obj_fit_st = survival::survfit(Surv(clinical_data$DFM, clinical_data$censored) ~ clinical_data$ST)
+print(surv_obj_fit_st)
+```
+
+
+
+```{r E1-Q1.19}
+## Add your code here
+survminer::ggsurvplot(fit = surv_obj_fit_st,
+                      data = clinical_data,
+                      surv.median.line = "v",
+                     risk.table = "abs_pct")
+
+```
+
+
+
+```{r E1-Q1.21}
+## Add your code here
+?survival::survdiff() 
+survdiff(surv_obj~clinical_data$ST)
+```
+
+
+
+## Exercise 2. Survival analysis: Cox proportional hazards regression
+
+```{r E2-Q1.1}
+## Add your code here
+base::table(clinical_data$GS)
+clinical_data$GS_binary = ifelse(clinical_data$GS <=7, "low", "high")
+head(clinical_data)
+base::table(clinical_data$GS_binary)
+```
+
+
+
+```{r  E1-Q1.3}
+## Add your code here
+base::table(clinical_data$ERG)
+```
+
+
+
+```{r E2-NOTE1}
+table(table(clinical_data$DFM)) # first, run this
+# table(clinical_data$DFM) # next, uncomment and run this
+```
+
+
+
+```{r E2-Q1.7}
+## Add your code here
+?survival::coxph() 
+coxph_fit = coxph(surv_obj ~ clinical_data$ST + clinical_data$ERG + clinical_data$GS_binary, 
+                            data = clinical_data, 
+                            ties = "efron")
+base::summary(coxph_fit)
+survival::cox.zph(coxph_fit) 
+```
+
+
+
+```{r E2-Q1.8}
+## Add your code here
+ ?survival::cox.zph()
+prop_hazard_test_result = survival::cox.zph(coxph_fit)
+prop_hazard_test_result
+
+```
+
+
+
+```{r E2-Q1.10}
+## Add your code here
+base::summary(coxph_fit) 
+```
+
+
+
+```{r E2-Q1.14}
+## Add your code here
+?survminer::ggforest()
+coxph_fit = coxph(Surv(DFM, censored) ~ ST + ERG + GS_binary, data = clinical_data)
+ggforest(coxph_fit)
+```
+
+
+```{r E2-NOTE2}
+ggcoxzph(prop_hazard_test_result, var="STPrimary")
+ggcoxzph(prop_hazard_test_result, var="GS_binarylow")
+ggcoxzph(prop_hazard_test_result, var="ERGNegative")
+ggcoxzph(prop_hazard_test_result, var="ERGPositive")
+
+
+```
+
+
+
+## Exercise 3. Bioconductor databases
+
+```{r E3-Q1.1}
+## Add your code here
+library(org.Hs.eg.db)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(help="org.Hs.eg.db")
+library(help="TxDb.Hsapiens.UCSC.hg19.knownGene")
+```
+
+
+
+```{r E3-Q1.2}
+## Add your code here
+FOXA1_key = select(org.Hs.eg.db,
+                 keys = "FOXA1",
+                 columns = "ENTREZID",
+                 keytype = "ALIAS")$ENTREZID
+FOXA1_key
+```
+
+
+
+```{r E3-Q1.4}
+## Add your code here
+transcripts = select(TxDb.Hsapiens.UCSC.hg19.knownGene,
+                     keys = FOXA1_key,
+                     columns = c("GENEID", "TXCHROM", "TXSTART", "TXEND", "TXID", "EXONSTART","EXONEND"),
+                     keytype = "GENEID"
+                     )
+transcripts
+```
+
+
+
+```{r E3-Q1.8}
+## Add your code here
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(help="BSgenome.Hsapiens.UCSC.hg19")
+
+gene_coordinates = GenomicFeatures::genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
+gene_coordinates[gene_coordinates$gene_id == "3169"]
+FOXA1_sequence = BSgenome::getSeq(BSgenome.Hsapiens.UCSC.hg19, gene_coordinates[gene_coordinates$gene_id == "3169"])
+FOXA1_base_frequency = Biostrings::alphabetFrequency(FOXA1_sequence)
+print(FOXA1_base_frequency)
+```
+
+
+
+```{r E3-Q1.13}
+## Add your code here
+A=1430
+C=1403
+G=1301
+T=1435
+CG = (C+G)/(A+C+G+T)
+round(CG,2)
+```
+
+
+
+## Exercise 4. biomaRt online databases
+
+```{r E4-Q1.1}
+## Add your code here
+count_matrix = readRDS("count_matrix_normalized_logged.RDS")
+```
+
+
+
+```{r E4-Q1.2}
+## Add your code here
+library(biomaRt)
+ensembl_id_count_matrix = rownames(count_matrix)
+#mapping
+to_convert = ensembl_id_count_matrix
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+mappings_ensembl_entrez <- getBM(
+                  filters= "ensembl_gene_id", 
+                  attributes = c("ensembl_gene_id", "entrezgene_id"),
+                  values=to_convert, 
+                  mart= mart) 
+dim(mappings_ensembl_entrez)
+```
+
+
+
+```{r E4-Q1.3}
+## Add your code here
+library(org.Hs.eg.db)
+library(help=org.Hs.eg.db) 
+```
+
+
+
+```{r E4-Q1.7}
+## Add your code here
+xx <- as.list(org.Hs.egENSEMBL2EG)
+
+mappings_ensembl_entrez_from_package = xx[names(xx) %in% rownames(count_matrix)]
+```
+
+
+
+```{r E4-Q1.8}
+## Add your code here
+?base::setdiff
+mappings_ensembl_entrez_from_package
+mappings_ensembl_entrez
+
+base::setdiff(mappings_ensembl_entrez_from_package, mappings_ensembl_entrez)
+
+```
+
+
+```{r E4-Q1.9}
+## Add your code here
+base::setdiff(mappings_ensembl_entrez, mappings_ensembl_entrez_from_package)
+```
+
+
+```{r E4-Q1.10}
+## Add your code here
+from_count_matrix = rownames(count_matrix)
+from_biomaRt = mappings_ensembl_entrez$ensembl_gene_id
+from_package = names(mappings_ensembl_entrez_from_package)
+library(gplots)
+venn_data = list(from_count_matrix, from_biomaRt, from_package)
+venn(venn_data)
+```
+
+
+
+## Exercise 5. Data preparation and R script interpretation
+
+```{r preparing-data}
+# data = read.table("/student_data/BTK6003_2020/data/week_6/prad_mskcc_clinical_data.tsv", 
+#                   sep = "\t", 
+#                   header = TRUE, 
+#                   stringsAsFactors = FALSE)
+# 
+# data = data[(data$Disease.Free.Status != ""), ]
+# 
+# data = data[, c("Patient.ID",
+#                "Sample.Type",
+#                "Disease.Free..Months.",
+#                "Disease.Free.Status",
+#                "ERG.Fusion.ACGH",
+#                "Radical.Prostatectomy.Gleason.Score.for.Prostate.Cancer")
+#             ]
+# 
+# colnames(data) = c("PID",
+#                    "ST",
+#                    "DFM",
+#                    "DFS",
+#                    "ERG",
+#                    "GS")
+# 
+# data = data[complete.cases(data), ]
+# 
+# data = data[data$GL != "Tx_Effects", ]
+# data = data[data$GL != "", ]
+# 
+# write.table(data, 
+#             file = "prad_MSKCC_2010.tsv", 
+#             sep = "\t", 
+#             quote = FALSE)
+
+#### RUNNING CODING
+data = read.table("/student_data/BBT.BI.202_2021/data/week_6/prad_mskcc_clinical_data.tsv", 
+                  sep = "\t", 
+                  header = TRUE, 
+                  stringsAsFactors = FALSE)
+
+```
+
