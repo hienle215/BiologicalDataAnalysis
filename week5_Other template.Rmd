@@ -1,0 +1,450 @@
+---
+title: "Exercise set 5"
+author: "Other template for references"
+date: "28/11/2021"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Exercise 1. Creating graphs and visualization
+
+```{r E1-Q2.1}
+## Add your code here
+library(graph)
+#library(help="graph")
+?graphNEL
+#gR <- data("MAPKsig")
+#gR
+
+numOfNodes= numNodes(MAPKsig)
+numOfEdges= numEdges(MAPKsig)
+
+data(MAPKsig)
+adjBAD<-adj(MAPKsig,"BAD")
+
+outDegree <- degree(MAPKsig,"RALA")
+
+numOfNodes
+numOfEdges
+outDegree
+adjBAD
+
+#if (require(Rgraphviz)) {
+ #  nat = rep(FALSE, length(nodes(MAPKsig)))
+  # names(nat) = nodes(MAPKsig)
+   #plot(MAPKsig, nodeAttrs=list(fixedsize=nat))
+ #  }
+#edgeWeights(gR)
+#signature(object = "graphNEL")
+#numOfNodes= numNodes(object = data(MAPKsig))
+#numOfEdges= numEdges(data(MAPKsig))
+#adj(gR)
+#signature(object = data(MAPKsig),adj="BAD")
+```
+
+
+
+```{r hint-1}
+## Creating a graphNEL that shows the distances among 3 major cities in Finland
+V <- c("Tampere", "Helsinki", "Turku")
+edL = list(Tampere=list(edges=c("Helsinki", "Turku"), weights=c(178, 164)), 
+           Turku=list(edges=c("Tampere", "Helsinki"), weights=c(164, 169)),
+           Helsinki=list(edges=c("Tampere", "Turku"), weights=c(178, 169))
+           )
+cities = graphNEL(nodes=V, edgeL=edL)
+cities
+plot(cities)
+```
+
+
+
+```{r hint-2}
+## If value is equal to 7, we win, everything else we lose!
+values = c(1:10)
+result = list()
+for (value in values){
+  if (value == 7) {
+    result[[value]] = "Win!"
+  }
+  else {
+    result[[value]] = "Loss!"
+  }
+}
+result
+```
+
+
+
+```{r E1-Q3.1}
+## Add your code here
+selected_key="GO:0019395"
+selected_key_offspring  <- as.list(GOBPCHILDREN[selected_key])
+atest <- as.vector(unlist(selected_key_offspring))
+V <- append(atest,"GO:0019395")
+E=list()
+E$`GO:0019395`$edges = c( "GO:0001561", 
+          "GO:0006635",
+          "GO:0010430",
+          "GO:0046320",
+          "GO:0046321",
+          "GO:0046322"
+          )
+# E = list("GO:0001561"=list(edges=c(character(0))), 
+#             "GO:0006635"=list(edges=c(character(0))),
+#             "GO:0010430"=list(edges=c(character(0))),
+#             "GO:0046320"=list(edges=c(character(0))), 
+#             "GO:0046321"=list(edges=c(character(0))),
+#             "GO:0046322"=list(edges=c(character(0))),
+#             "GO:0019395"=list(edges=V))
+
+VV = c("GO:0001561", "GO:0006635","GO:0019395")
+EE = list("GO:0001561"=list(edges=c()), 
+          "GO:0006635"=list(edges=c()),
+          "GO:0010430"=list(edges=c()),
+          "GO:0046320"=list(edges=c()),
+          "GO:0046321"=list(edges=c()),
+          "GO:0046322"=list(edges=c()),
+          "GO:0019395"=list(edges=E$`GO:0019395`$edges)
+          
+    
+          
+          )
+            
+# 
+# length(V)
+# E
+# E<-unlist(E)
+# length(E)
+
+G = graphNEL(nodes=V, edgeL=EE, edgemode="directed")
+G
+degree(G)
+plot(G)
+
+```
+```
+#V <- select(GO.db, keys = selected_key_offspring[[1]][1:10], keytype = "GOID", columns = "TERM")
+# selected_key_offspring <- unlist(selected_key_offspring[1:6])
+# row.names(selected_key_offspring)<-NULL
+# 
+# selected_key_offspring[7] = selected_key
+# selected_key_offspring
+#V<-V$GOID
+#V
+#E = list()
+#for (value in V){
+#  if (V[value] == "GO:0019395") {
+#  E = list("GO:0019395"=list(edges=E$GO:0019395$edges))
+#       }
+#  else {
+#  E = list("GO:0019395"=list(edges=character(0)))
+#  }
+#}
+
+#G = graphNEL(nodes=as.character(V), edgeL=E)
+#G
+#plot(G)
+
+
+```
+
+
+
+## Exercise 2. Pathway enrichment analysis (MAPK signaling pathway)
+
+```{r E2-Q1.1}
+## Add your code here
+count_matrix <- readRDS("/student_data/BBT.BI.202_2021/data/week_5/count_matrix_normalized_logged.RDS")
+gene_list <-  readRDS("/student_data/BBT.BI.202_2021/data/week_5/DE_genes_PC_vs_BPH.RDS")
+
+```
+
+
+
+```{r E2-Q1.2}
+## Add your code here
+ensembl_gene_ids <- row.names(count_matrix)
+to_convert = ensembl_gene_ids 
+to_convert <- na.omit(to_convert)
+library('biomaRt')
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+
+mappings_ensembl_entrez <- getBM(
+  filters= "ensembl_gene_id", 
+  attributes = c("ensembl_gene_id","entrezgene_id"),
+  values=to_convert, 
+  mart= mart) 
+
+
+```
+
+
+
+```{r E2-Q1.3}
+library(KEGG.db)
+#a<-class(KEGGEXTID2PATHID)
+#a
+#KEGGEXTID2PATHID
+map_ke <- as.list(KEGGEXTID2PATHID)
+#map_ke
+#!is.na(match(mappings_ensembl_entrez$entrezgene_id, names(map_ke)))
+kegg_entrez_pathway = map_ke[!is.na(match(mappings_ensembl_entrez$entrezgene_id, names(map_ke)))]
+#typeof(kegg_entrez_pathway)
+ensembl2kegg_pathway = list()
+#a <- class(mappings_ensembl_entrez[, ])
+#a
+#ss<- typeof(mappings_ensembl_entrez[i, ]$entrezgene_id)
+#ss
+#typeof(temp)
+#sss<-nrow(mappings_ensembl_entrez)
+for (i in 1:nrow(mappings_ensembl_entrez)) {
+  temp = kegg_entrez_pathway[as.character(mappings_ensembl_entrez[i, ]$entrezgene_id)]
+  if (!is.na(names(temp))){
+    ensembl2kegg_pathway[mappings_ensembl_entrez[i, ]$ensembl_gene_id] = temp
+  } 
+}
+
+for (i in 1:nrow(mappings_ensembl_entrez)) {
+  temp = kegg_entrez_pathway[as.character(mappings_ensembl_entrez[i, ]$entrezgene_id)]
+  if (!is.na(names(temp))){
+    ensembl2kegg_pathway[mappings_ensembl_entrez[i, ]$ensembl_gene_id] = temp
+  } 
+}
+#test
+#atestInheritedMethods()a <- typeof(temp)
+#a
+```
+
+
+
+### Pathway enrichment
+
+```{r E2-Q1.4}
+## Add your code here
+#library(help="KEGG.db")
+#KEGGEXTID2PATHID
+#library(KEGG.db)
+KEGGPathways <- as.list(KEGGPATHNAME2ID)
+
+#descriptions <- sapply(xx, function(x) unlist(attributes(get(x))))
+
+#attributes(xx)
+
+KEGGPathwaysNames <- as.matrix(unlist(list(attributes(KEGGPathways))))
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+KEGGPathways[grep("MAPK signaling pathway",KEGGPathwaysNames)]
+#toString(grep("MAPK signaling pathway",attributes(xx)))
+#select(,)         
+```
+
+
+
+#### Calculate N
+
+```{r hint-3}
+l = list(g1=c('p1'),
+         g2=c('p2', 'p3'), # g2 is assigned to two ps.
+         g3=c('p1'),
+         g4= NA   # g4 is not assigned to any p.
+         )
+l
+unlist(l) # check how the gene names are modified
+sum(!is.na(unlist(l)))
+```
+
+
+
+
+```{r E2-Q1.6}
+## Add your code here
+#KEGGPathways
+#unlist(ensembl2kegg_pathway) # check how the gene names are modified
+N <- sum(!is.na(unlist(ensembl2kegg_pathway)))
+N
+```
+
+
+
+#### Calculate n for our pathway
+
+```{r hint-4}
+l = list(g1=c('p1'),
+         g2=c('p2', 'p3'), # g2 is assigned to two ps.
+         g3=c('p1'),
+         g4= NA   # g4 is not assigned to any p.
+         )
+
+l_table = table(unlist(l))
+l_table
+l_table["p3"]
+```
+
+
+
+```{r E2-Q1.8}
+## Add your code here
+
+l_table = table(unlist(ensembl2kegg_pathway))
+#l_table
+n <- l_table["hsa04010"]
+n
+```
+
+
+
+#### Calculate M
+
+```{r E2-Q1.10}
+## Add your code here
+
+ensembl2kegg_pathway_de <- ensembl2kegg_pathway[names(ensembl2kegg_pathway) %in% rownames(gene_list)]
+M <- sum(!is.na(unlist(ensembl2kegg_pathway_de)))
+M
+```
+
+
+
+#### Calculate k for our pathway
+
+```{r E2-Q1.12}
+## Add your code here
+l_table = table(unlist(ensembl2kegg_pathway_de))
+#l_table
+k <- l_table["hsa04010"]
+k
+```
+
+
+
+#### Calculate enrichment P-values
+
+```{r E2-Q1.14}
+## Add your code here
+#sum(phyper(k-1, M, N-M, n))
+sum(dhyper(k:n, M, N-M, n))
+1- phyper(k-1, M, N-M, n)
+N
+M
+```
+
+
+
+## Exercise 3. Pathway visualization
+
+#### Calculate mean difference between PC and BPH used by pathview i.e. `gene.data`
+
+```{r E3-Q2.1}
+## Add your code here
+#library(help="pathview")
+
+meanBPH <- apply(count_matrix[,1:5], 1, sum)/5 
+meanPC <- apply(count_matrix[,6:20], 1, sum)/15
+count_matrix_mean_diff <- (meanPC-meanBPH)
+which.min(count_matrix_mean_diff)
+which.max(count_matrix_mean_diff)
+min(count_matrix_mean_diff)
+```
+
+
+
+```{r E3-Q2.4}
+## Add your code here
+library(pathview)
+
+#a <- grep("hsa04010",ensembl2kegg_pathway_de)
+#genes_MAPK_signaling_pathway <- unlist(attributes(ensembl2kegg_pathway_de[a]))
+
+cc<-as.matrix(count_matrix_mean_diff)
+pathviewOutput <- pathview(gene.data=cc, pathway.id="04010", species="hsa", gene.idtype="ENSEMBL",out.suffix = "MAPK_signaling", limit = list(gene=2, cpd=1),kegg.native = TRUE)
+```
+
+
+
+## Exercise 4. R script interpretation
+
+
+
+
+## Exercise 5. Pathway enrichment analysis; many pathways
+
+### Calculate n for all pathways
+
+```{r E5-Q1.1}
+## Add your code here
+N
+M
+ns <- table(unlist(ensembl2kegg_pathway))
+#l_table
+#n <- l_table["hsa04010"]
+#n
+#KEGGPathwaysNames
+#for (i in KEGGPathwaysNames){
+# ns[i] = l_table[]
+#  }
+ ns 
+```
+
+
+
+### Calculate k for all pathways
+
+```{r E5-Q1.2}
+## Add your code here
+ks <- table(unlist(ensembl2kegg_pathway_de))
+ks
+```
+
+
+
+### Calculate pathway enrichment P-values
+
+```{r E5-Q1.3}
+## Add your code here
+ps=matrix()
+for(i in 1:length(ks)){
+#ps[i]= 1- phyper(ks[i]-1, M, N-M, ns[i])
+ps[i]=sum(dhyper(ks[i]:n, M, N-M, ns[i]))
+
+}
+#ps
+min(ps)
+
+```
+
+
+### Significant pathways
+
+```{r E5-Q1.5}
+## Add your code here
+#rownames(ks)
+ps2<- as.matrix(ps)
+row.names(ps2) = rownames(ks)
+sum(length(which(ps<0.05)))
+#ps2
+```
+
+
+
+```{r E5-Q1.7}
+## Add your code here
+#rownames(ps2)
+a=ps2[(which(ps2[,1]<0.05)),]
+a<-sort(a,decreasing = FALSE)
+a<-data.frame(a)
+a
+# a<-a[order(a$a),]
+# a<-data.frame(a)
+# a
+```
+
+
+
+```{r E5-Q1.9}
+## Add your code here
+```
